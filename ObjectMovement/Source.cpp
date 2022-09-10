@@ -1,56 +1,139 @@
 #include <Windows.h>
+#include <stdint.h>
 
-// 1-ый параметр - указатель на начало исполняемого модуля, 2-й не используется, 3-й - указатель на строку юникод символов, 4-й - 
-// параметр того, как будет показано окно (свёрнуто, на весь экран и тп)
-int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR szCmdLine, int nCmdShow)
+typedef uint32_t u32;
+
+int running = 1;
+int client_width = 0;
+int client_heigh = 0;
+
+int player_x = 0;
+int player_y = 0;
+int tile_size = 25;
+
+void* memory;
+BITMAPINFO bitmap_info;
+
+void clear_screen(u32 color)
 {
-	MSG msg{};
-	HWND hwnd{}; // дискриптор окна, где хранится инфа о созданном окне. Указатель на определённую область памяти в ядре
+    u32* pixel = (u32*)memory;
 
-	WNDCLASSEX wc{ sizeof(WNDCLASSEX) }; // Характеристики окна
+    for (int pixel_number = 0; pixel_number < client_width * client_heigh; ++pixel_number)
+    {
+        *pixel++ = color;
+    }
+}
 
-	wc.cbClsExtra = 0; 
-	wc.cbWndExtra = 0;
-	wc.hbrBackground = reinterpret_cast<HBRUSH>(GetStockObject(WHITE_BRUSH));  // Дискриптор кисти 
-	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);  // Подгружаем курсор и иконки окна
-	wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-	wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
-	wc.hInstance = hInstance;
-	wc.lpfnWndProc = [](HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT  // Процедура за обработку сообщений
-	{
-		switch (uMsg)
-		{
-		case WM_DESTROY:
-		{
-			PostQuitMessage(EXIT_SUCCESS);
-		}
-		return 0;
-		}
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
-	};
-	wc.lpszClassName = L"MyAppClass";  // уникальное имя класса
-	wc.lpszMenuName = nullptr;
-	wc.style = CS_VREDRAW | CS_HREDRAW;  // стиль окна
+void draw_rectangle(int rec_x, int rec_y, int rec_width, int rec_heigh, u32 color)
+{
+    u32* pixel = (u32*)memory;
 
-	// регистрация в системе класса окна
-	if (!RegisterClassEx(&wc))
-	{
-		return EXIT_FAILURE;
-	}
+    pixel += rec_y * client_width + rec_x;
 
-	if (hwnd = CreateWindow(wc.lpszClassName, L"Заголовок!", WS_OVERLAPPEDWINDOW, 0, 0, 600, 600,
-		nullptr, nullptr, wc.hInstance, nullptr); hwnd == INVALID_HANDLE_VALUE)
-		return EXIT_FAILURE;
+    for (int y = 0; y < rec_heigh; ++y)
+    {
+        for (int x = 0; x < rec_width; ++x)
+        {
+            *pixel++ = color;
+        }
 
-	ShowWindow(hwnd, nCmdShow);
-	UpdateWindow(hwnd);
+        pixel += client_width - rec_width;
+    }
+}
 
-	// Запуск цикла обработки сообщений
-	while (GetMessage(&msg, nullptr, 0, 0))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
 
-	return static_cast<int>(msg.wParam);
+LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM w_param, LPARAM l_param)
+{
+    LRESULT result{};
+    switch (message)
+    {
+        case WM_CLOSE:
+        {
+            running = 0;
+        } break;
+
+        case WM_KEYDOWN:
+        {
+            switch (w_param)
+            {
+                case VK_RIGHT:
+                {
+                    player_x += tile_size;
+                } break;
+
+                case VK_LEFT:
+                {
+                    player_x -= tile_size;
+                } break;
+
+                case VK_UP:
+                {
+                    player_y += tile_size;
+                } break;
+
+                case VK_DOWN:
+                {
+                    player_y -= tile_size;
+                } break;
+            }
+        } break;
+
+        default:
+        {
+            result = DefWindowProc(window, message, w_param, l_param);
+        } break;
+    }
+    return result;
+}
+
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line, int cmd_show)
+{
+    WNDCLASS window_class = {0};
+
+    wchar_t class_name[] = L"GameWindowClass";
+
+    window_class.lpfnWndProc = WindowProc;
+    window_class.hInstance = instance;
+    window_class.lpszClassName = class_name;
+
+    RegisterClass(&window_class);
+
+    HWND window = CreateWindowEx(0, class_name, L"Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, 
+                                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, instance, 0);
+
+
+    RECT rect;
+    GetClientRect(window, &rect);
+    client_width = rect.right - rect.left;
+    client_heigh = rect.bottom - rect.top;
+
+    memory = VirtualAlloc(0, client_width * client_heigh * 4, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+    bitmap_info.bmiHeader.biSize = sizeof(bitmap_info.bmiHeader);
+    bitmap_info.bmiHeader.biWidth = client_width;
+    bitmap_info.bmiHeader.biHeight = client_heigh;
+    bitmap_info.bmiHeader.biPlanes = 1;
+    bitmap_info.bmiHeader.biBitCount = 32;
+    bitmap_info.bmiHeader.biCompression = BI_RGB;
+
+    HDC hdc = GetDC(window);
+
+    while (running)
+    {
+        MSG message;
+
+        while (PeekMessage(&message, window, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&message);
+            DispatchMessage(&message);
+        }
+
+        clear_screen(0x111111);
+
+        draw_rectangle(player_x, player_y, tile_size, tile_size, 0xff00f7);
+
+        StretchDIBits(hdc, 0, 0, client_width, client_heigh, 0, 0, client_width, client_heigh, memory, &bitmap_info, DIB_RGB_COLORS, SRCCOPY);
+    }
+
+    return 0;
 }
