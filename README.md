@@ -1,1 +1,1 @@
-# OS-SP-Lab1
+# Operating Systems and System Programming. Laboratory Work №1
