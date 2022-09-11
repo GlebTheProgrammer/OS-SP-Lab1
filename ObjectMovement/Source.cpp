@@ -4,8 +4,8 @@
 typedef uint32_t u32;
 
 int running = 1;
-int client_width = 0;
-int client_heigh = 0;
+int client_width = 640;
+int client_heigh = 640;
 
 int player_x = 0;
 int player_y = 0;
@@ -97,15 +97,22 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
     window_class.lpszClassName = class_name;
     window_class.hCursor = LoadCursor(0, IDC_CROSS);
 
+
+    RECT window_rect;
+    window_rect.left = 0;
+    window_rect.right = client_width;
+    window_rect.top = 0;
+    window_rect.bottom = client_heigh;
+
+    AdjustWindowRectEx(&window_rect, WS_OVERLAPPEDWINDOW, 0, 0);
+
+    int window_width = window_rect.right - window_rect.left;
+    int window_height = window_rect.bottom - window_rect.top;
+
     RegisterClass(&window_class);
 
     HWND window = CreateWindowEx(0, class_name, L"Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, 
-                                 CW_USEDEFAULT, 600, 600, 0, 0, instance, 0);
-
-    RECT rect;
-    GetClientRect(window, &rect);
-    client_width = rect.right - rect.left;
-    client_heigh = rect.bottom - rect.top;
+                                 CW_USEDEFAULT, window_width, window_height, 0, 0, instance, 0);
 
     memory = VirtualAlloc(0, client_width * client_heigh * 4, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
