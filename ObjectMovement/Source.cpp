@@ -77,25 +77,25 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM w_param, LPARAM l_
         {
             switch (w_param)
             {
-            case VK_RIGHT:
-            {
-                moving_right = 0;
-            } break;
+                case VK_RIGHT:
+                {
+                    moving_right = 0;
+                } break;
 
-            case VK_LEFT:
-            {
-                moving_left = 0;
-            } break;
+                case VK_LEFT:
+                {
+                    moving_left = 0;
+                } break;
 
-            case VK_UP:
-            {
-                moving_up = 0;
-            } break;
+                case VK_UP:
+                {
+                    moving_up = 0;
+                } break;
 
-            case VK_DOWN:
-            {
-                moving_down = 0;
-            } break;
+                case VK_DOWN:
+                {
+                    moving_down = 0;
+                } break;
             }
         } break;
 
@@ -103,26 +103,59 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM w_param, LPARAM l_
         {
             switch (w_param)
             {
-            case VK_RIGHT:
-            {
-                if (!moving_right) moving_right = 1;
-            } break;
 
-            case VK_LEFT:
+                case VK_RIGHT:
+                {
+                    if (!moving_right) moving_right = 1;
+                } break;
+
+                case VK_LEFT:
+                {
+                    if (!moving_left) moving_left = 1;
+                } break;
+
+                case VK_UP:
+                {
+                    if (!moving_up) moving_up = 1;
+                } break;
+
+                case VK_DOWN:
+                {
+                    if (!moving_down) moving_down = 1;
+                } break;
+            }
+        } break;
+
+        case WM_RBUTTONDOWN:
+        {
+            switch (w_param)
+            {
+                case MK_RBUTTON:
+                {
+                    if (!moving_right) moving_right = 1;
+                } break;
+            }
+        } break;
+
+        case WM_RBUTTONUP:
+        {
+            moving_right = 0;
+        } break;
+
+        case WM_LBUTTONDOWN:
+        {
+            switch (w_param)
+            {
+            case MK_LBUTTON:
             {
                 if (!moving_left) moving_left = 1;
             } break;
-
-            case VK_UP:
-            {
-                if (!moving_up) moving_up = 1;
-            } break;
-
-            case VK_DOWN:
-            {
-                if (!moving_down) moving_down = 1;
-            } break;
             }
+        } break;
+
+        case WM_LBUTTONUP:
+        {
+            moving_left = 0;
         } break;
 
         default:
