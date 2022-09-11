@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <stdint.h>
 #include <wchar.h>
+#include <exception>
 
 typedef uint32_t u32;
 
@@ -235,6 +236,28 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
 
         player_x += dt * d_player_x;
         player_y += dt * d_player_y;
+
+        // Rebounds from windows border
+        if (player_y + tile_size > client_heigh)
+        {
+            player_x -= dt * d_player_x;
+            player_y -= 7 * dt * d_player_y;
+        }
+        if (player_y < 0)
+        {
+            player_x += dt * d_player_x;
+            player_y += 30;
+        }
+        if (player_x < 0)
+        {
+            player_x = 30;
+            player_y += dt * d_player_y;
+        }
+        if (player_x + tile_size > client_width)
+        {
+            player_x -= 7 * dt * d_player_x;
+            player_y -= dt * d_player_y;
+        }
 
         d_player_x *= 0.0f;
         d_player_y *= 0.0f;
