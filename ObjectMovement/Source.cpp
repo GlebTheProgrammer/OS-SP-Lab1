@@ -109,10 +109,17 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
     int window_width = window_rect.right - window_rect.left;
     int window_height = window_rect.bottom - window_rect.top;
 
+    int screen_width = GetSystemMetrics(SM_CXSCREEN);
+    int screen_height = GetSystemMetrics(SM_CYSCREEN);
+
+    // Расположение окна ровно по центру
+    int window_x = (screen_width / 2) - (window_width / 2);
+    int window_y = (screen_height / 2) - (window_height / 2);
+
     RegisterClass(&window_class);
 
-    HWND window = CreateWindowEx(0, class_name, L"Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, 
-                                 CW_USEDEFAULT, window_width, window_height, 0, 0, instance, 0);
+    HWND window = CreateWindowEx(0, class_name, L"Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, window_x, 
+                                 window_y, window_width, window_height, 0, 0, instance, 0);
 
     memory = VirtualAlloc(0, client_width * client_heigh * 4, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
