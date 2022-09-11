@@ -227,6 +227,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
         d_player_x *= speed;
         d_player_y *= speed;
 
+        if (d_player_x != 0.0f && d_player_y != 0.0f)
+        {
+            d_player_x *= 0.707f;
+            d_player_y *= 0.707f;
+        }
+
         player_x += dt * d_player_x;
         player_y += dt * d_player_y;
 
