@@ -95,12 +95,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
     window_class.lpfnWndProc = WindowProc;
     window_class.hInstance = instance;
     window_class.lpszClassName = class_name;
+    window_class.hCursor = LoadCursor(0, IDC_CROSS);
 
     RegisterClass(&window_class);
 
     HWND window = CreateWindowEx(0, class_name, L"Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, 
-                                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, instance, 0);
-
+                                 CW_USEDEFAULT, 600, 600, 0, 0, instance, 0);
 
     RECT rect;
     GetClientRect(window, &rect);
