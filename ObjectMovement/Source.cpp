@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <stdint.h>
+#include <wchar.h>
 
 typedef uint32_t u32;
 
@@ -7,12 +8,31 @@ int running = 1;
 int client_width = 640;
 int client_heigh = 640;
 
-int player_x = 0;
-int player_y = 0;
+float player_x;
+float player_y;
+
+float d_player_x;
+float d_player_y;
+
+int moving_left;
+int moving_right;
+int moving_up;
+int moving_down;
+
+
 int tile_size = 25;
 
 void* memory;
 BITMAPINFO bitmap_info;
+
+float targer_seconds_per_frame = 1.0f / 120.0f;
+
+LARGE_INTEGER frequency;
+
+float get_seconds_per_frame(LARGE_INTEGER start_counter, LARGE_INTEGER end_counter)
+{
+    return ((float)(end_counter.QuadPart - start_counter.QuadPart) / (float)frequency.QuadPart);
+}
 
 void clear_screen(u32 color)
 {
@@ -52,29 +72,55 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM w_param, LPARAM l_
             running = 0;
         } break;
 
+        case WM_KEYUP:
+        {
+            switch (w_param)
+            {
+            case VK_RIGHT:
+            {
+                moving_right = 0;
+            } break;
+
+            case VK_LEFT:
+            {
+                moving_left = 0;
+            } break;
+
+            case VK_UP:
+            {
+                moving_up = 0;
+            } break;
+
+            case VK_DOWN:
+            {
+                moving_down = 0;
+            } break;
+            }
+        } break;
+
         case WM_KEYDOWN:
         {
             switch (w_param)
             {
-                case VK_RIGHT:
-                {
-                    player_x += tile_size;
-                } break;
+            case VK_RIGHT:
+            {
+                if (!moving_right) moving_right = 1;
+            } break;
 
-                case VK_LEFT:
-                {
-                    player_x -= tile_size;
-                } break;
+            case VK_LEFT:
+            {
+                if (!moving_left) moving_left = 1;
+            } break;
 
-                case VK_UP:
-                {
-                    player_y += tile_size;
-                } break;
+            case VK_UP:
+            {
+                if (!moving_up) moving_up = 1;
+            } break;
 
-                case VK_DOWN:
-                {
-                    player_y -= tile_size;
-                } break;
+            case VK_DOWN:
+            {
+                if (!moving_down) moving_down = 1;
+            } break;
             }
         } break;
 
@@ -88,7 +134,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM w_param, LPARAM l_
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line, int cmd_show)
 {
-    WNDCLASS window_class = {0};
+    WNDCLASS window_class = { 0 };
 
     wchar_t class_name[] = L"GameWindowClass";
 
@@ -118,8 +164,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
 
     RegisterClass(&window_class);
 
-    HWND window = CreateWindowEx(0, class_name, L"Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, window_x, 
-                                 window_y, window_width, window_height, 0, 0, instance, 0);
+    HWND window = CreateWindowEx(0, class_name, L"Game", WS_OVERLAPPEDWINDOW | WS_VISIBLE, window_x,
+        window_y, window_width, window_height, 0, 0, instance, 0);
 
     memory = VirtualAlloc(0, client_width * client_heigh * 4, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
@@ -132,6 +178,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
 
     HDC hdc = GetDC(window);
 
+    LARGE_INTEGER start_counter, end_counter, counts, fps, ms;
+
+    QueryPerformanceCounter(&start_counter);
+
+    QueryPerformanceFrequency(&frequency);
+
     while (running)
     {
         MSG message;
@@ -141,6 +193,45 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
             TranslateMessage(&message);
             DispatchMessage(&message);
         }
+
+        QueryPerformanceCounter(&end_counter);
+
+        float seconds_per_frame = get_seconds_per_frame(start_counter, end_counter);
+
+        if (seconds_per_frame < targer_seconds_per_frame)
+        {
+            DWORD sleep_ms;
+            sleep_ms = (DWORD)(1000 * (targer_seconds_per_frame - seconds_per_frame));
+            Sleep(sleep_ms);
+
+            while (seconds_per_frame < targer_seconds_per_frame)
+            {
+                QueryPerformanceCounter(&end_counter);
+
+                seconds_per_frame = get_seconds_per_frame(start_counter, end_counter);
+            }
+        }
+
+        QueryPerformanceCounter(&end_counter);
+        seconds_per_frame = get_seconds_per_frame(start_counter, end_counter);
+        start_counter = end_counter;
+
+        float dt = seconds_per_frame;
+        float speed = 250.0f;
+
+        if (moving_right) d_player_x = 1.0f;
+        if (moving_left) d_player_x = -1.0f;
+        if (moving_up) d_player_y = 1.0f;
+        if (moving_down) d_player_y = -1.0f;
+
+        d_player_x *= speed;
+        d_player_y *= speed;
+
+        player_x += dt * d_player_x;
+        player_y += dt * d_player_y;
+
+        d_player_x *= 0.0f;
+        d_player_y *= 0.0f;
 
         clear_screen(0x111111);
 
